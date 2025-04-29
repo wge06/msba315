@@ -1,83 +1,81 @@
 import streamlit as st
 import torch
 import torch.nn as nn
-import torchvision.transforms as transforms
+from torchvision import transforms
 from PIL import Image
-import numpy as np
 import cv2
+import numpy as np
 
-# Define emotion labels
-emotion_labels = ['Angry', 'Disgust', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neutral']
+# ---------------------
+# Define your model class or structure here (example CNN)
+# ---------------------
+class EmotionCNN(nn.Module):
+    def __init__(self):
+        super(EmotionCNN, self).__init__()
+        self.features = nn.Sequential(
+            nn.Conv2d(3, 32, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2),
+            nn.Conv2d(32, 64, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2)
+        )
+        self.classifier = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(64 * 56 * 56, 128),  # Adjust if input size is different
+            nn.ReLU(),
+            nn.Linear(128, 5)  # 5 classes
+        )
 
-# Load model
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+        return x
+
+# ---------------------
+# Load the model safely
+# ---------------------
 @st.cache_resource
 def load_model():
-    model = torch.load('final_model.pth', map_location=torch.device('cpu'))
+    model = EmotionCNN()
+    model.load_state_dict(torch.load("final_model.pth", map_location=torch.device('cpu')))
     model.eval()
     return model
 
 model = load_model()
+classes = ['angry', 'happy', 'neutral', 'sad', 'surprised']
 
-# Define transform
+# ---------------------
+# Image preprocessing
+# ---------------------
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
-    transforms.Normalize(mean=[0.5]*3, std=[0.5]*3)
 ])
 
-# Detect face using OpenCV
-def detect_face(image_np):
-    gray = cv2.cvtColor(image_np, cv2.COLOR_BGR2GRAY)
-    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
-    faces = face_cascade.detectMultiScale(gray, 1.3, 5)
-    return faces
-
-# Predict emotion
-def predict_emotion(face_img):
-    face_tensor = transform(face_img).unsqueeze(0)
+def predict_emotion(image: Image.Image):
+    image = transform(image).unsqueeze(0)  # Add batch dimension
     with torch.no_grad():
-        outputs = model(face_tensor)
-        _, predicted = torch.max(outputs, 1)
-        return emotion_labels[predicted.item()]
+        output = model(image)
+        _, predicted = torch.max(output, 1)
+        return classes[predicted.item()]
 
+# ---------------------
 # Streamlit UI
+# ---------------------
 st.title("Facial Emotion Detection")
+st.write("Detect human emotions from webcam or image upload")
 
-option = st.radio("Choose input method:", ["📷 Webcam", "📁 Upload Image"])
+option = st.radio("Choose input method:", ("Upload Image", "Use Webcam"))
 
-if option == "📁 Upload Image":
-    uploaded_file = st.file_uploader("Upload an image", type=['jpg', 'png', 'jpeg'])
+if option == "Upload Image":
+    uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
     if uploaded_file:
-        image = Image.open(uploaded_file).convert('RGB')
-        image_np = np.array(image)
-        faces = detect_face(image_np)
+        image = Image.open(uploaded_file).convert("RGB")
+        st.image(image, caption="Uploaded Image", use_column_width=True)
+        label = predict_emotion(image)
+        st.success(f"Predicted Emotion: **{label}**")
 
-        if len(faces) == 0:
-            st.warning("No face detected.")
-        else:
-            for (x, y, w, h) in faces:
-                face_crop = image.crop((x, y, x + w, y + h))
-                emotion = predict_emotion(face_crop)
-                cv2.rectangle(image_np, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                cv2.putText(image_np, emotion, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 0, 255), 2)
-
-            st.image(image_np, caption="Detected Faces", use_column_width=True)
-
-elif option == "📷 Webcam":
-    st.warning("Webcam support works locally only.")
-    picture = st.camera_input("Take a picture")
-    if picture:
-        image = Image.open(picture).convert('RGB')
-        image_np = np.array(image)
-        faces = detect_face(image_np)
-
-        if len(faces) == 0:
-            st.warning("No face detected.")
-        else:
-            for (x, y, w, h) in faces:
-                face_crop = image.crop((x, y, x + w, y + h))
-                emotion = predict_emotion(face_crop)
-                cv2.rectangle(image_np, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                cv2.putText(image_np, emotion, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 0, 255), 2)
-
-            st.image(image_np, caption="Detected Faces", use_column_width=True)
+elif option == "Use Webcam":
+    st.warning("Streamlit Cloud does not support webcam access directly.")
+    st.info("Please run this locally using: `streamlit run app.py`")
