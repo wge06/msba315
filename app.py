@@ -2,6 +2,7 @@ import streamlit as st
 import torch
 import torch.nn as nn
 from torchvision import transforms, models
+from torchvision.models import efficientnet_b0, EfficientNet_B0_Weights
 from PIL import Image
 import cv2
 import numpy as np
