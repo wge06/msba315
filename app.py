@@ -10,13 +10,17 @@ import os
 
 # Define the emotion labels
 EMOTION_LABELS = ['Angry', 'Happy', 'Neutral', 'Sad', 'Surprised']
-
+NUM_CLASSES = 5
 # Load the model
 @st.cache_resource
 def load_model():
-    model = models.mobilenet_v2(pretrained=False)
-    model.classifier[1] = nn.Linear(model.last_channel, 5)  # 5 emotion classes
-    model.load_state_dict(torch.load("final_model.pth", map_location=torch.device("cpu")))
+    weights = EfficientNet_B0_Weights.DEFAULT
+    model = efficientnet_b0(weights=weights)
+    model.classifier = nn.Sequential(
+    nn.Dropout(0.3),
+    nn.Linear(model.classifier[1].in_features, NUM_CLASSES)
+    )
+    model.load_state_dict(torch.load("final_model.pth"))
     model.eval()
     return model
 
