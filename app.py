@@ -31,6 +31,8 @@ model = load_model()
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
+    transforms.Normalize([0.485, 0.456, 0.406], 
+                         [0.229, 0.224, 0.225])
 ])
 
 # Face detection using OpenCV Haar cascade
@@ -57,7 +59,7 @@ def detect_faces_and_predict(image):
     return annotated_img
 
 # Streamlit UI
-st.title("Facial Emotion Detection")
+st.title("MSBA 315 Project - Facial Emotion Detection")
 
 option = st.radio("Choose input type:", ("Use Webcam", "Upload an Image"))
 
