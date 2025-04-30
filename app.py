@@ -70,7 +70,7 @@ if option == "Upload an Image":
         result_img = detect_faces_and_predict(image)
         st.image(result_img, caption='Detected Emotions', use_container_width=True)
 
-elif option == "Use Webcam":
+elif option == "Use Camera":
     picture = st.camera_input("Take a picture")
     if picture:
         image = Image.open(picture)
