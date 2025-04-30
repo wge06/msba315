@@ -68,11 +68,11 @@ if option == "Upload an Image":
     if uploaded_file:
         image = Image.open(uploaded_file)
         result_img = detect_faces_and_predict(image)
-        st.image(result_img, caption='Detected Emotions', use_column_width=True)
+        st.image(result_img, caption='Detected Emotions', use_container_width=True)
 
 elif option == "Use Webcam":
     picture = st.camera_input("Take a picture")
     if picture:
         image = Image.open(picture)
         result_img = detect_faces_and_predict(image)
-        st.image(result_img, caption='Detected Emotions', use_column_width=True)
+        st.image(result_img, caption='Detected Emotions', use_container_width=True)
