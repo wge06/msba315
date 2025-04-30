@@ -61,7 +61,7 @@ def detect_faces_and_predict(image):
 # Streamlit UI
 st.title("MSBA 315 Project - Facial Emotion Detection")
 
-option = st.radio("Choose input type:", ("Use Webcam", "Upload an Image"))
+option = st.radio("Choose input type:", ("Use Camera", "Upload an Image"))
 
 if option == "Upload an Image":
     uploaded_file = st.file_uploader("Upload Image", type=['jpg', 'jpeg', 'png'])
